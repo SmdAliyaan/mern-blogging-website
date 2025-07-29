@@ -1,0 +1,1 @@
+<!-- to include react dom properies u have to wrap he app inside a browser router -->
