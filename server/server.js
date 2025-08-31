@@ -4,6 +4,7 @@ import 'dotenv/config'
 import bcrypt, { hash } from 'bcrypt';
 import User from './Schema/User.js';
 import { nanoid } from 'nanoid';
+import jwt from 'jsonwebtoken';
 
 const server = express();
 let PORT = 3000;
@@ -15,6 +16,17 @@ mongoose.connect(process.env.DB_LOCATION,{
     autoIndex: true
 })
 
+const formatDatatoSend = (user) => {
+
+    const access_token = jwt.sign({id:user._id},process.env.SECRET_ACCESS_KEY)
+
+    return{
+        access_token,
+        profile_img: user.personal_info.profile_img,
+        fullname: user.personal_info.fullname,
+        username: user.personal_info.username,
+    }
+}
 const generateUsername = async(email) => {
     let username = email.split('@')[0];        // getting username from email as@gmail -> [as,gmail] -> as
 
@@ -63,7 +75,7 @@ server.post("/signup",(req,res) => {
 
         user.save().then((u) => {
 
-            return res.status(200).json({"message":"User created successfully"})
+            return res.status(200).json(formatDatatoSend(u))
 
         })
         .catch(err => {
@@ -77,6 +89,35 @@ server.post("/signup",(req,res) => {
     })
 
 })
+
+server.post("/signin",(req,res) => {
+
+    let{email,password} = req.body;
+
+    User.findOne({"personal_info.email": email})
+    .then((user) => {
+        if(!user){
+            return res.status(403).json({"message":"User with this email does not exist"})
+        }
+
+        bcrypt.compare(password,user.personal_info.password,(err,result) => {
+            if(err){
+                return res.status(500).json({"message":"error occured while login please try again"})
+            }
+
+            if(!result){
+                return res.status(403).json({"message":"Incorrect password"})
+            }else{
+                return res.status(200).json(formatDatatoSend(user))
+            }
+        })
+    })
+        .catch(err => {
+            console.log(err.message)
+            return res.status(500).json({"error": err.message})
+        })
+    })
+
 
 server.listen(PORT,() => {
     console.log('listening on port ->' + PORT);
