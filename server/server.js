@@ -5,6 +5,7 @@ import bcrypt, { hash } from 'bcrypt';
 import User from './Schema/User.js';
 import { nanoid } from 'nanoid';
 import jwt from 'jsonwebtoken';
+import cors from 'cors';
 
 const server = express();
 let PORT = 3000;
@@ -38,7 +39,7 @@ const generateUsername = async(email) => {
 }
 
 server.use(express.json())      // accepts json data from frontend
-
+server.use(cors())         // to avoid cors error
 
 server.post("/signup",(req,res) => {
     let {fullname,email,password} = req.body;
